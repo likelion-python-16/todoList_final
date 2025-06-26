@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<div class="container">
+  <h2>Update Your Todo</h2>
+  <div>
+    <label for="name">Name:</label>
+    <input type="text" name="name" id="name">
+  </div>
+
+  <div>
+    <label for="description">Description:</label>
+    <textarea name="description" id="description"></textarea>
+  </div>
+
+  <div>
+    <label for="complete">Complete:</label>
+    <input type="checkbox" name="complete" id="complete">
+  </div>
+  <div>
+    <label for="completed_at">Completed At:</label>
+    <input type="datetime-local" name="completed_at" id="completed_at">
+  </div>
+  <div>
+    <label for="exp">Experience Points:</label>
+    <input type="number" name="exp" id="exp" min="0">
+  </div>
+
+  <button type="button" id="todoUpdate">Update</button>
+</div>
+
+<script>
+// --- 1. 초기화 -------------------------------
+document.addEventListener('DOMContentLoaded', init);
+
+// --- 2. 초기화
+function init() {
+  // URL에서 PK(기본키) 추출 → /todo/update/5/ → "5"
+  const pk = getTodoId(); // 5 즉 pk
+  loadTodoIntoForm(pk);
+  bindUpdateButton(pk);
+}
+
+// --- 3. URL에서 PK 추출 ------------------------
+function getTodoId() {
+  // 예: /todo/update/5/ → ["todo","update","5"] → pop() → "5"
+  // split('/') → ["", "todo", "update", "5", ""] → filter(Boolean) → ["todo", "update", "5"]
+  return window.location.pathname.split('/').filter(Boolean).pop();
+  //window.location.pathname -> /todo/update/5/
+  //.split('/') -> ["", "todo", "update", "5", ""]
+  //.filter(Boolean) 필터에서 true인값만 남긴다는 뜻으로 빈문자열은 제거하고 ["todo", "update", "5"]만 남김
+  //.pop() -> 배열의 마지막 요소를 꺼냅니다: 결국은 5 즉 pk만 남는다.
+}
+
+// --- 4. 기존 Todo 데이터 로드 & 폼 채우기 -----
+function loadTodoIntoForm(pk) {
+  // 상세조회 API 호출 (TodoRetrieveAPI)
+  axiosInstance
+    .get(`/todo/viewsets/view/${pk}/`) //api_views.py 변경시 수정자리
+    // ← retrieve 엔드포인트 : 엔드포인트(endpoint)란 클라이언트(브라우저, 앱 등)가 서버와 통신할 때 요청을 보내는 정확한 주소(URL)를 말합니다.
+    // 현업에서는 엔드포인트 호출해줘라고 한다.
+    .then(res =>{ //서버 응답을 받아오는 매개변수
+      populateForm(res.data)
+      console.log("res??",res); //전체 응답 객체
+      console.log("data??",res.data); //← 받아온 데이터를 form에 채움
+    })  
+    .catch(err => console.error('로딩 실패:', err));
+}
+
+// --- 5.서버에서 데이터를 불러오기
+function populateForm(data) {
+  document.getElementById('name').value = data.name;
+  document.getElementById('description').value = data.description;
+  document.getElementById('complete').checked = data.complete;
+  document.getElementById('exp').value = data.exp;
+}
+/*
+axiosInstance.get('/todo/viewsets/view/', {
+  name: '공부하기',
+  description: '자바스크립트 복습',
+  complete: false,
+  exp: 30
+});
+이런 데이터를 받아온것이다.
+*/
+
+// --- 6. 업데이트 버튼 클릭 바인딩 -------------
+function bindUpdateButton(pk) {
+  const btn = document.getElementById('todoUpdate');
+  if (!btn) return;
+  btn.addEventListener('click', () => handleUpdate(pk));
+  //빈()괄호는 매개변수를 받지 않는다는뜻
+  //매개변수 없이 handleUpdate(pk)를 실행하는 함수"를 뜻합니다.
+}
+
+// --- 7. 업데이트 요청 처리 --------------------
+function handleUpdate(pk) {
+  const payload = {
+    name:document.getElementById('name').value,
+    description:document.getElementById('description').value,
+    complete:document.getElementById('complete').checked,
+    exp:Number(document.getElementById('exp').value),
+  };//payload는 바로 HTML의 <input>에 사용자가 입력한 값을 수집한 데이터 객체입니다.
+
+  // 수정 API 호출 (TodoUpdateAPI)
+  axiosInstance
+    .patch(`/todo/viewsets/view/${pk}/`, payload) 
+    // ← update 엔드포인트 수정
+    .then(() => redirectToDetail(pk))
+    .catch(err => {
+      console.error('수정 실패:', err);
+      alert('Todo 수정에 실패했습니다.');
+    });
+}
+
+// --- 8. 수정 후 상세 페이지로 이동 -------------
+function redirectToDetail(pk) {
+  window.location.href = `/todo/detail/${pk}/`;
+}
+</script>
+{% endblock %}

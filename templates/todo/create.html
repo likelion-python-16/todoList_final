@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block content %}
+<div class="container">
+	<h2>Create a New Todo</h2>
+		<div>
+			<label for="name">Name:</label>
+			<input type="text" name="name" id="name">
+		</div>
+		<div>
+			<label for="description">Description:</label>
+			<textarea name="description" id="description"></textarea>
+		</div>
+		<div>
+			<label for="complete">Complete:</label>
+			<input type="checkbox" name="complete" id="complete">
+		</div>
+    <div>
+      <label for="completed_at">Completed At:</label>
+      <input type="datetime-local" name="completed_at" id="completed_at">
+	  </div>
+    <div>
+      <label for="image">Image:</label>
+      <input type="file" name="image" id="image">
+    </div>
+		<div>
+			<label for="exp">Experience Points:</label>
+			<input type="number" name="exp" id="exp" min="0">
+		</div>
+		<button type="submit" id="todoCreate">Create</button>
+
+</div>
+
+<script>
+// --- 1. 문서가 완전히 로드되면 초기화 실행 -------------------------------
+document.addEventListener('DOMContentLoaded', init);
+
+// --- 2. 초기화: 이벤트 바인딩 실행 ---------------------------------------
+function init() {
+  bindUIEvents(); // 버튼에 클릭 이벤트 연결
+}
+
+// --- 3. UI 이벤트 바인딩: 생성 버튼 클릭 이벤트 연결 ---------------------
+function bindUIEvents() {
+  const btn = document.getElementById('todoCreate');
+  if (!btn) return;
+  btn.addEventListener('click', onCreateClick); // 클릭 시 4번 실행
+}
+
+// --- 4. 생성 버튼 클릭 시 실행되는 핸들러 -------------------------------
+function onCreateClick() {
+  const payload = gatherFormData(); // 5번: 폼 데이터 수집 gatherFormData() 함수에서 각 input 요소의 값을 읽는다
+  createTodo(payload); // 6번: 서버에 데이터 전송
+}
+
+// --- 5. 폼 데이터 수집: 입력값을 객체로 변환 -----------------------------
+{% comment %} function gatherFormData() {
+  let expVal = document.getElementById('exp').value;
+
+  if (expVal === '') expVal = 0; //expVal이 빈 문자열('')이라면, expVal에 기본값 0을 넣어라.
+
+  const completedAtInput = document.getElementById('completed_at').value; 
+  const completedAt = completedAtInput ? new Date(completedAtInput).toISOString() : null;
+  return {
+    name:document.getElementById('name').value, 
+    // 이 객체 안에 name이라는 키(key)를 만들고,그 값(value)은 document.getElementById('name').value로 설정해라."
+
+    description:document.getElementById('description').value,
+    complete:document.getElementById('complete').checked,
+    completed_at: completedAt,
+    exp:Number(expVal),
+  };
+} {% endcomment %}
+
+function gatherFormData() {
+  const formData = new FormData(); // 이미지 전송 가능한 폼 객체
+
+  // 숫자 처리
+  let expVal = document.getElementById('exp').value;
+  if (expVal === '') expVal = 0;
+
+  // 날짜 처리
+  const completedAtInput = document.getElementById('completed_at').value;
+  const completedAt = completedAtInput ? new Date(completedAtInput).toISOString() : null;
+
+  // 텍스트 필드 추가
+  formData.append("name", document.getElementById('name').value);
+  formData.append("description", document.getElementById('description').value);
+  formData.append("complete", document.getElementById('complete').checked);
+  formData.append("completed_at", completedAt);
+  formData.append("exp", Number(expVal));
+
+  // 이미지 파일 추가
+  const imageInput = document.getElementById('image');
+  if (imageInput && imageInput.files.length > 0) {
+    formData.append("image", imageInput.files[0]);
+  }
+
+  return formData;
+}
+
+
+// --- 6. API 호출: Todo 생성 요청 -----------------------------------------
+function createTodo(data) {
+  axiosInstance
+    .post('/todo/viewsets/view/', data) // 엔드포인트
+    .then(onCreateSuccess) // 7번: 성공 시 처리
+    .catch(onCreateError); // 8번: 실패 시 처리
+}
+
+// --- 7. 생성 성공 핸들러: 목록 페이지로 이동 -----------------------------
+function onCreateSuccess(response) {
+  // 생성 후 목록 페이지로 이동
+  window.location.href = '/todo/list/';
+}
+
+// --- 8. 생성 실패 핸들러: 에러 알림 --------------------------------------
+function onCreateError(error) {
+  console.error('Todo 생성 실패:', error);
+  alert('Todo 생성에 실패했습니다.');
+}
+</script>
+
+{% endblock %}    

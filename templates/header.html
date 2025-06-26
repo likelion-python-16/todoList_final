@@ -1,0 +1,57 @@
+{% load static %}
+<div class="header">
+ <h1>Todo List</h1>
+ <div class="user-actions">
+  <a href="{% url 'todo_List' %}" class="nav-link">📋 목록</a>
+
+  {% if user.is_authenticated %}
+   <!-- 🔓 로그아웃 버튼 (id 추가) -->
+   <button id="logoutBtn" class="nav-link logout">🔓 로그아웃</button>
+  {% else %}
+   <!-- 🔒 로그인은 여전히 DRF 기본 로그인 뷰 사용 -->
+   <a
+    href="{% url 'rest_framework:login' %}?next={% url 'todo_List' %}"
+    class="nav-link login"
+   >🔒 로그인</a>
+  {% endif %}
+ </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+ const logoutBtn = document.getElementById("logoutBtn");
+
+ if (logoutBtn) {
+  logoutBtn.addEventListener("click", async () => {
+   try {
+    await axiosInstance.post("/todo/api/custom-logout/");
+    window.location.href = "{% url 'todo_List' %}";
+   } catch (err) {
+    console.error("로그아웃 실패:", err);
+    alert("로그아웃 중 오류가 발생했습니다.");
+   }
+  });
+ }
+});
+</script>
+
+
+<!--
+<button id="logoutBtn">로그아웃</button> 
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("logoutBtn").addEventListener("click", () => {
+    axiosInstance.get("/todo/api/custom-logout/")
+      .then(() => {
+        window.location.href = "{% url 'todo_List' %}";
+      })
+      .catch(err => {
+        console.error("로그아웃 실패:", err);
+        alert("로그아웃 중 오류가 발생했습니다.");
+      });
+  });
+});
+</script>
+
+-->

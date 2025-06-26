@@ -1,0 +1,21 @@
+{% load static %} 
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  {% include "head.html" %}
+</head>
+<body>
+  {% include 'header.html' %} 
+	{% block content %}{% endblock %}
+	{% include 'footer.html' %} 
+
+  <!-- Global Scripts -->
+  <script src="{% static 'js/getCookie.js' %}"></script>
+  <script src="{% static 'js/axiosInstance.js' %}"></script>
+  <script src="{% static 'js/utils.js' %}"></script>
+
+  <!-- 페이지별 개별 스크립트 삽입 위치 -->
+  {% block scripts %}{% endblock %}
+
+</body>
+</html>
