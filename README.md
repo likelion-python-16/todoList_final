@@ -1,5 +1,4 @@
 # DRF Todo List Final
-### todo list 최종본
 
 ### ⚙️ 개발 환경
 - `asgiref==3.8.1`
