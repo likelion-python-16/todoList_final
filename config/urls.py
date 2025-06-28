@@ -13,6 +13,9 @@ urlpatterns = [
     path('', lambda request: redirect('todo_List')),
     path('api-auth/', include('rest_framework.urls')),
     path("accounts/", include("django.contrib.auth.urls")), #배포할때 필요 templates/regustration/logged_out.html
+    
+    # interaction 앱 API
+    path('api/interaction/', include('interaction.urls')),
 
     # OpenAPI 3.0 schema
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),

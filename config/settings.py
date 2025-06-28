@@ -38,6 +38,7 @@ ALLOWED_HOSTS = ["*"]
 
 CUSTOM_APPS = [
   'todo',
+  'interaction',
 ]
 
 THIRD_PARTY_APPS = [
@@ -149,7 +150,6 @@ REST_FRAMEWORK = {
     # JWTAuthentication → 토큰 기반 인증 (선택사항, 사용 시 추가 설치 필요)
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",
-        # "rest_framework_simplejwt.authentication.JWTAuthentication",  # JWT 사용 시 주석 해제
     ],
 
     # 권한 클래스: 인증된 사용자만 접근 가능하도록 기본 설정
@@ -160,7 +160,7 @@ REST_FRAMEWORK = {
 
     # 페이지네이션 클래스: 커스텀 페이지네이션 클래스 지정
     "DEFAULT_PAGINATION_CLASS": "todo.pagination.CustomPageNumberPagination",
-    "PAGE_SIZE": 2,  # 페이지당 객체 수
+    "PAGE_SIZE": 5,  # 페이지당 객체 수
 
     # 렌더러 클래스: 브라우저에서 보기 좋게 JSON과 HTML 렌더링
     "DEFAULT_RENDERER_CLASSES": [

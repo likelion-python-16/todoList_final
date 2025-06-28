@@ -8,6 +8,8 @@ from . import views, api_views
 router = DefaultRouter()
 router.register("view", TodoViewSet, basename="todo")
 
+app_name ="interaction"
+
 urlpatterns = [
 	#path("list/", views.todo_list, name="todo_List"), #데이터 작동 테스트용
 

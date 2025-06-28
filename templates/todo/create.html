@@ -17,10 +17,14 @@
 			<label for="complete">Complete:</label>
 			<input type="checkbox" name="complete" id="complete">
 		</div>
-    <div>
+
+    {% comment %} 
+    <div> 모델에 완료버튼과 동시에 자동으로 날짜가 찍혀야 하기때문에 생성쪽에는 이 부분이 필요없다.
       <label for="completed_at">Completed At:</label>
       <input type="datetime-local" name="completed_at" id="completed_at">
-	  </div>
+	  </div> 
+    {% endcomment %}
+
     <div>
       <label for="image">Image:</label>
       <input type="file" name="image" id="image">
@@ -56,40 +60,29 @@ function onCreateClick() {
 }
 
 // --- 5. 폼 데이터 수집: 입력값을 객체로 변환 -----------------------------
-{% comment %} function gatherFormData() {
-  let expVal = document.getElementById('exp').value;
-
-  if (expVal === '') expVal = 0; //expVal이 빈 문자열('')이라면, expVal에 기본값 0을 넣어라.
-
-  const completedAtInput = document.getElementById('completed_at').value; 
-  const completedAt = completedAtInput ? new Date(completedAtInput).toISOString() : null;
-  return {
-    name:document.getElementById('name').value, 
-    // 이 객체 안에 name이라는 키(key)를 만들고,그 값(value)은 document.getElementById('name').value로 설정해라."
-
-    description:document.getElementById('description').value,
-    complete:document.getElementById('complete').checked,
-    completed_at: completedAt,
-    exp:Number(expVal),
-  };
-} {% endcomment %}
-
 function gatherFormData() {
   const formData = new FormData(); // 이미지 전송 가능한 폼 객체
 
   // 숫자 처리
-  let expVal = document.getElementById('exp').value;
-  if (expVal === '') expVal = 0;
+  //let expVal = document.getElementById('exp').value;
+  // if (expVal === '') expVal = 0; 수정
+  
+  // ✅ 숫자 처리 수정
+  const expInput = document.getElementById('exp');
+  const expVal = expInput && expInput.value.trim() !== '' ? Number(expInput.value) : 0;
 
-  // 날짜 처리
-  const completedAtInput = document.getElementById('completed_at').value;
-  const completedAt = completedAtInput ? new Date(completedAtInput).toISOString() : null;
+  // ✅ 날짜 처리 모델에 작성했으므로 삭제
+  //const completedAtInput = document.getElementById('completed_at').value;
+  // const completedAt = completedAtInput ? new Date(completedAtInput).toISOString() : null;
+  /*
+  null을 그대로 FormData에 넣으면, 서버에서는 빈 문자열로 해석되며,이는 DateTimeField에서 "이 필드는 올바른 datetime이 아닙니다." 오류로 이어집니다.
+  */
 
   // 텍스트 필드 추가
   formData.append("name", document.getElementById('name').value);
   formData.append("description", document.getElementById('description').value);
   formData.append("complete", document.getElementById('complete').checked);
-  formData.append("completed_at", completedAt);
+  //formData.append("completed_at", completedAt); ✅ 모델에서 처리하므로 삭제
   formData.append("exp", Number(expVal));
 
   // 이미지 파일 추가
@@ -107,7 +100,10 @@ function createTodo(data) {
   axiosInstance
     .post('/todo/viewsets/view/', data) // 엔드포인트
     .then(onCreateSuccess) // 7번: 성공 시 처리
-    .catch(onCreateError); // 8번: 실패 시 처리
+    //.catch(onCreateError); // ✅ 아래 코드와 같이 수정
+    .catch(err => {
+      console.error("Todo 생성 실패: ", err.response?.data || err);
+    });
 }
 
 // --- 7. 생성 성공 핸들러: 목록 페이지로 이동 -----------------------------

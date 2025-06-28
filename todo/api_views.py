@@ -1,12 +1,3 @@
-from rest_framework import status, generics
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from .serializers import TodoSerializer
-from .models import Todo
-from rest_framework import viewsets
-from rest_framework.parsers import MultiPartParser, FormParser
-
-
 # 전체보기
 # class TodoListAPI(APIView):
 #     def get(self, request):
@@ -81,7 +72,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 #         todo.delete()
 #         return Response(status=status.HTTP_204_NO_CONTENT)
 
-# APIView는 DRF의 가장 기본 클래스. HTTP 메서드(GET, POST 등)를 
+# APIView는 DRF의 가장 기본 클래스. HTTP 메서드(GET, POST 등)를
 # 직접 정의하며, request, response, permission 처리 기능 제공
 
 # GenericAPIView는 GenericAPIView는 APIView를 상속하면서
@@ -129,34 +120,56 @@ from rest_framework.parsers import MultiPartParser, FormParser
 #     serializer_class = TodoSerializer
 
 
+# from rest_framework import status, generics
+# from rest_framework.views import APIView
+# from rest_framework.response import Response
+# from .serializers import TodoSerializer
+# from .models import Todo
+# from rest_framework import viewsets
+# from rest_framework.parsers import MultiPartParser, FormParser
+# from django.contrib.auth import logout
+# from rest_framework.permissions import IsAuthenticated  # 권한 설정용
+# from rest_framework.authentication import SessionAuthentication  # 인증 방식
+# from rest_framework.permissions import AllowAny
+# from rest_framework import viewsets, permissions, filters
+
+from rest_framework import status, generics, viewsets, permissions, filters
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.authentication import SessionAuthentication
 
 from django.contrib.auth import logout
-from rest_framework.permissions import IsAuthenticated  # 권한 설정용
-from rest_framework.authentication import SessionAuthentication  # 인증 방식
 
+from .serializers import TodoSerializer
+from .models import Todo
 
-# ViewSet은
-# CRUD 기능을 한 곳에 모아서 간편하게 만들 수 있도록 도와주는 클래스입니다.
-# viewset하나면 자동으로 list, create, retrieve(상세조회), update(수정), destroy(삭제) 기능이 생깁니다.
 
 # REST Framework_ViewSets
 class TodoViewSet(viewsets.ModelViewSet):
     # queryset = Todo.objects.all().order_by("-created_at") 있으면 basename 생략 가능
     serializer_class = TodoSerializer
-    
+
     # 인증 방식 설정: Django 로그인 세션 사용
     authentication_classes = [SessionAuthentication]
     # 권한 설정: 로그인된 사용자만 이 API 사용 가능
     permission_classes = [IsAuthenticated]
+    #  permission_classes = [AllowAny] # 테스트용
+
+    # ─── ✅ 검색 기능 활성화 추가 ───
+    filter_backends = [filters.SearchFilter]  # ← 수정
+    search_fields = ["name", "description"]  # ← 수정: 검색 대상 필드 지정
 
     # 정렬된 쿼리셋 반환 (최신 생성일 순)
-    def get_queryset(self):  
+    def get_queryset(self):
         qs = Todo.objects.all().order_by("-created_at")
-        print("정렬된 queryset preview:", list(qs[:3]))  # 서버 로그 확인용
         return qs
 
-# get_queryset(): 필요할 때 데이터를 필터링해서 가져올 수 있는 함수
-# /todo/viewsets/view/
+    # ✅ 추가
+    def get_serializer_context(self):
+        return {"request": self.request}
+
 
 # 로그아웃 API (세션 기반 로그아웃 처리)
 class CustomLogoutAPI(APIView):

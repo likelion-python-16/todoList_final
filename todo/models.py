@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 class Todo(models.Model):
 	name = models.CharField(max_length=100)
@@ -14,3 +15,10 @@ class Todo(models.Model):
 
 	def __str__(self):
 		return self.name
+	
+	def save(self, *args, **kwargs):
+		if self.complete and self.completed_at is None:
+			self.completed_at = timezone.now()
+		elif not self.complete:
+			self.completed_at = None
+		super().save(*args, **kwargs)
