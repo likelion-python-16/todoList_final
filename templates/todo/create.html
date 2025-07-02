@@ -66,7 +66,9 @@ function gatherFormData() {
   // 숫자 처리
   //let expVal = document.getElementById('exp').value;
   // if (expVal === '') expVal = 0; 수정
-  
+  // exp 값이 빈 값이거나 공백일 때 0으로 처리하고, 숫자가 입력된 경우에는 정확하게 숫자로 변환하여 전송하기 위함입니다.
+
+
   // ✅ 숫자 처리 수정
   const expInput = document.getElementById('exp');
   const expVal = expInput && expInput.value.trim() !== '' ? Number(expInput.value) : 0;

@@ -6,9 +6,9 @@ from rest_framework.routers import DefaultRouter
 from . import views, api_views
 
 router = DefaultRouter()
-router.register("view", TodoViewSet, basename="todo")
+router.register(r"view", TodoViewSet, basename="todo")
 
-app_name ="interaction"
+app_name ="todo"
 
 urlpatterns = [
 	#path("list/", views.todo_list, name="todo_List"), #데이터 작동 테스트용

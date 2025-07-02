@@ -1,0 +1,380 @@
+
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+{% if user.is_authenticated %}
+    
+    {# ─── 검색바 추가 ─── #}
+    <div class="search-bar" style="margin-bottom:16px;">  <!-- ← 수정 -->
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="검색어를 입력하세요"
+        style="padding:8px; width:200px;"
+      >
+      <button id="searchBtn" class="btn">검색</button>
+    </div>
+    {# ─── 검색바끝 ─── #}
+
+    <div class="todocontainer"></div>
+    <div class="pagination"></div>
+    <div class="list-btn">
+      <button class="todoCreate" id="createBtn">Todo 등록하기</button>
+    </div>
+{% else %}
+    <div style="max-width: 600px; margin: 40px auto; text-align: center;">
+        <p>할 일 목록은 로그인 후에 확인하실 수 있습니다.</p>
+    </div>
+{% endif %}
+
+
+<script>
+let currentPage = 1;  //  현재 페이지를 기억하는 전역 변수
+let currentSearch = "";   // ✅← 수정: 검색어를 기억할 전역 변수
+
+// 1. 문서가 완전히 로드되면 초기화 함수 실행
+document.addEventListener('DOMContentLoaded', init);
+
+// 2. 초기화: UI 이벤트 연결 및 첫 페이지 Todo 목록 로드
+function init() {
+    UIEvents(); // 2-1. 버튼 이벤트 연결
+    loadTodoList(1); // 2-2. 첫 페이지 목록 불러오기
+}
+
+// 2-1. UI 이벤트 바인딩: "Todo 등록하기" 버튼 클릭 시 등록 페이지로 이동
+function UIEvents() {
+    document.getElementById('createBtn')
+        .addEventListener('click', onCreateClick);
+
+     /* ─── ✅ 검색 버튼 이벤트 바인딩 ─── */ 
+    document.getElementById('searchBtn')
+        .addEventListener('click', () => {
+            currentSearch = document.getElementById('searchInput').value.trim();  // ← 수정
+            loadTodoList(1);
+    });
+    /*
+    1. 'searchBtn'이라는 ID를 가진 버튼 요소를 찾는다
+
+    2. 그 버튼에 클릭 이벤트 리스너를 추가한다:
+        - 사용자가 클릭하면 다음 작업을 수행:
+            a. 'searchInput'이라는 ID를 가진 입력창의 값을 읽어온다
+            b. 앞뒤 공백을 제거한 값을 currentSearch 변수에 저장한다
+            c. 페이지 번호 1번을 기준으로 할 일 목록을 불러오는 함수를 호출한다
+            1페이지부터 할 일 목록(Todo 리스트)을 서버에서 다시 불러오기 위한 함수 호출입니다. 재요청 개념
+    */    
+}
+
+
+
+
+// 2-1-1. 등록 버튼 클릭 시 /todo/create/로 이동
+function onCreateClick() {
+    window.location.href = '/todo/create/';
+}
+
+// 3. 서버에서 Todo 목록 불러오기
+function loadTodoList(page) {
+    currentPage = page; 
+    fetchTodoData(page, currentSearch)   //✅ ← 수정: search 인자 전달
+        .then(data => {
+            const todos = extractTodoArray(data);  
+            renderTodoList(todos);  
+            renderPagination(data, page); 
+        })
+        .catch(err => {
+            if (err.response?.status === 404 && err.response.data.detail === 'Invalid page.') {
+                // 잘못된 페이지 → 첫 페이지로 복귀
+                console.warn('잘못된 페이지 요청, 첫 페이지로 이동합니다.');
+                return loadTodoList(1);
+            }
+            console.error('리스트 로드 실패:', err);
+        });
+} 
+
+// 3-1. axios를 이용해 서버로부터 특정 페이지의 Todo 목록 가져오기
+function fetchTodoData(page, search="") {  // ✅ ← 수정: search 파라미터
+    return axiosInstance
+        //.get(`/todo/viewsets/view/?page=${currentPage}`) 
+        .get(`/todo/viewsets/view/`, { 
+            params: { page, search }  // ✅ ← 수정: search 쿼리 포함
+        })
+        .then(res => {
+            console.log("응답 데이터:", res.data);
+            return res.data;
+        });    
+} 
+
+// 3-2. API 응답 형식에 따라 Todo 배열 추출
+function extractTodoArray(data) {
+    // 1) CustomPageNumberPagination 사용 시
+    if (Array.isArray(data.data)) {
+        return data.data;
+    }
+    // 2) 기본 PageNumberPagination 사용 시
+    if (Array.isArray(data.results)) {
+        return data.results;
+    }
+    // 3) Pagination 없이 순수 배열 리턴 시
+    if (Array.isArray(data)) {
+        return data;
+    }
+    return [];
+}
+
+// 3-3. 추출된 Todo 항목들을 화면에 렌더링
+function renderTodoList(todos) {
+    const container = document.querySelector('.todocontainer');
+    container.innerHTML = '';
+    todos.forEach(todo => {
+        console.log("todo.id 확인:", todo.id); // pk확인
+        container.appendChild(createTodoElement(todo))
+    });
+} 
+
+// 3-3-1. 단일 Todo 객체를 HTML 요소로 생성
+function createTodoElement(todo) {
+    const div = document.createElement('div');
+    div.className = 'todo-item';
+
+    // 완료된 항목이면 밑줄 적용
+    if (todo.complete) {
+        div.classList.add('completed');
+    }
+
+    // 목록 클릭 시 상세 페이지 이동
+    div.addEventListener('click', () => detailView(todo.id));
+
+    // HTML 내용 설정
+    div.innerHTML = `
+        <p><strong>Name:</strong> ${todo.name}</p>
+        <p><strong>Description:</strong> ${todo.description}</p>
+        <p><strong>Complete:</strong> ${todo.complete}</p>
+        <p><strong>Completed At:</strong> ${datetimeToString(todo.completed_at)}</p>
+        <p><strong>Experience Points:</strong> ${todo.exp}</p>
+        <p><strong>image:</strong><br> ${todo.image ? `<img src="${todo.image}" alt="${todo.name}" width="150">` : ''}</p>
+            
+        <!-- ✅ 소셜 기능 UI 추가 -->
+        <div class="todo-interactions">
+            
+            <!-- 좋아요 버튼 -->
+            <button class="social-btn likeBtn" data-id="${todo.id}"> 
+                <span class="icon">${todo.is_liked ? '💔' : '❤️'}</span> 
+                <span class="count">${todo.like_count}</span>           
+            </button>
+
+            <!-- 북마크 버튼 -->
+            <button class="social-btn bookmarkBtn" data-id="${todo.id}"> 
+                <span class="icon">🔖</span>                                
+                <span class="count">${todo.bookmark_count}</span>           
+            </button>
+
+            <!-- 댓글 보기/토글 버튼 -->
+            <button class="social-btn commentToggleBtn">                  
+                <span class="icon">💬</span>                                 
+                <span class="count">${todo.comment_count || 0}</span>       
+            </button>
+        </div>
+
+        <!-- 댓글 박스는 interactions 바깥으로 뺐습니다 -->
+        <div class="commentBox" style="display:none;">                   
+            <ul class="commentList"></ul>
+            <input type="text" class="commentInput" placeholder="댓글을 입력하세요">
+            <button class="commentSubmit">등록</button>
+        </div>
+
+        <!-- 완료 버튼은 interactions 안으로 이동시키고 오른쪽 정렬 -->
+        <div class="todo-interactions">                                 
+            <button class="completeBtn">완료</button>                    
+        </div>
+    `;
+
+    // 완료 버튼 클릭 시 완료 API 호출
+    div.querySelector('.completeBtn')
+        .addEventListener('click', e => {
+            e.stopPropagation();
+            toComplete(todo.id).then(() => {
+                loadTodoList(currentPage); // ✅ 완료 버튼 누르면 서버에 저장만 하지 말고, todoList 다시 불러오게하기
+        });
+    });
+    
+    // ✅ 좋아요 버튼 이벤트
+    div.querySelectorAll('.likeBtn').forEach(btn => { // 1. .likeBtn 클래스를 가진 모든 요소를 선택하여 반복
+        btn.addEventListener('click', function (e) { // 2. 각 버튼(btn)에 클릭 이벤트 리스너 등록
+            e.stopPropagation(); // 3. 클릭 이벤트가 부모 요소로 전파되는 것을 막음 (버블링 방지)
+            const id = this.dataset.id; // 4. 이 버튼에 data-id 속성으로 저장된 값을 가져옴 (보통 Todo의 ID)
+            console.log("👍 좋아요 클릭, id =", id); // 5. 콘솔에 클릭된 아이템의 ID를 출력 (디버깅용)
+            toggleLike(btn.dataset.id); // 6. 좋아요 토글 함수 실행 (해당 ID의 Todo에 대해 좋아요 처리)
+        });
+    });
+
+    // ✅ 북마크 버튼 이벤트
+    div.querySelector('.bookmarkBtn')
+        .addEventListener('click', function(e) {
+            e.stopPropagation();
+            console.log("북마크 클릭, id =", id);
+            const id = this.dataset.id;
+            toggleBookmark(id);
+            //console.log("데이터셋:", id); 
+        });
+
+    // ✅ 댓글 등록 버튼 이벤트
+    div.querySelector('.commentSubmit')
+        .addEventListener('click', e => {
+            e.stopPropagation();
+            const commentInput = div.querySelector('.commentInput');
+            const content = commentInput.value;
+            if (content.trim()) {
+                postComment(todo.id, content);
+                commentInput.value = ''; 
+            }
+        });
+
+    // ✅ 댓글 토글 버튼 이벤트
+    div.querySelector('.commentToggleBtn')
+        .addEventListener('click', e => {
+            e.stopPropagation();
+            const commentBox = div.querySelector('.commentBox');
+            commentBox.style.display = (commentBox.style.display === 'none') ? 'block' : 'none';
+            // 원한다면 댓글 목록 fetch해서 출력 가능
+            loadComments(todo.id, div.querySelector('.commentList'));
+        });
+
+    // ✅ 추가! 댓글 입력창 클릭 시 상세보기 이동 방지
+    div.querySelector('.commentInput')
+        .addEventListener('click', e => {
+            e.stopPropagation();
+        });    
+
+    return div;
+}
+
+// ✅ 좋아요 토글
+function toggleLike(id) {
+  axiosInstance.post(`/api/interaction/likes/${id}/toggle/`)
+    .then(res => { 
+      console.log("좋아요 응답:", res.data);
+      const { is_liked, like_count } = res.data;
+
+      // 1.  아이콘 변경 (있다면)
+      const btn = document.querySelector(`.likeBtn[data-id="${id}"]`);
+      if (btn) {
+        btn.innerText = is_liked ? "💔 좋아요 취소" : "❤️ 좋아요";
+      }
+
+      // 2. 좋아요 개수 갱신
+      const countSpan = document.querySelector(`.like-count[data-id="${id}"]`);
+      if (countSpan) {
+        countSpan.innerText = like_count;
+      }
+    })
+    .catch(err => {
+      console.error(" 좋아요 토글 실패:", err);
+    });
+}
+
+// ✅ 북마크 토글
+function toggleBookmark(id) {
+  axiosInstance.post(`/api/interaction/bookmarks/${id}/toggle/`)
+    .then(res => {
+      console.log('북마크 응답:', res.data);
+      const { is_bookmarked, bookmark_count } = res.data;
+
+      const btn  = document.querySelector(`.bookmarkBtn[data-id="${id}"]`);
+      const span = document.querySelector(`.bookmark-count[data-id="${id}"]`);
+
+      if (btn)  btn.innerText  = is_bookmarked ? '북마크 해지' : '🔖 북마크 하기';
+      if (span) span.innerText = bookmark_count;
+    })
+    .catch(err => console.error(' 북마크 토글 실패:', err));
+}
+
+// ✅ 댓글 달기
+function postComment(todoId, content) {
+  if (!content) return alert("댓글을 입력하세요");
+
+  axiosInstance.post("/api/interaction/comments/", {
+    todo_pk: todoId,       // perform_create에서 Todo로 처리
+    content: content       // serializer에서 요구
+  }).then(() => {
+    loadComments(todoId, document.querySelector('.commentList'));
+  }).catch(error => {
+    console.error(" 댓글 등록 실패:", error.response?.data || error);
+    alert(" 댓글 등록 실패:\n" +
+          JSON.stringify(error.response?.data, null, 2));
+  });
+}
+
+
+// ✅ 댓글 불러오기
+function loadComments(todoId, listElement) {
+  axiosInstance.get(`/api/interaction/comments/`, { params: { todo_pk: todoId } })
+    .then(res => {
+      const payload = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data.results)
+          ? res.data.results
+          : (res.data.data || []);
+
+      listElement.innerHTML = '';
+      payload.forEach(c => {
+        const li = document.createElement('li');
+        li.innerText = `${c.user.username || c.username}: ${c.content}`;
+        listElement.appendChild(li);
+      });
+    })
+    .catch(err => console.error('댓글 로드 실패:', err));
+}
+
+
+// 3-3-2. 완료 버튼 클릭 시 해당 Todo 항목을 완료 상태로 변경
+function toComplete(id) {
+    axiosInstance.patch(`/todo/viewsets/view/${id}/`, { complete: true })
+        .then(() => loadTodoList(currentPage))  
+        .catch(err => console.error('완료 처리 실패:', err));
+}
+
+
+// 3-3-3. 상세 페이지로 이동
+function detailView(id) {
+    window.location.href = `/todo/detail/${id}/`;
+}
+
+
+// 3-4. 페이지네이션 구성 (← 이전, 1 2 3, → 다음)
+function renderPagination(data, currentPage) {
+    const wrapper = document.querySelector('.pagination');
+    wrapper.innerHTML = '';
+
+    const totalPages = data.page_count;
+
+     // 이전 페이지 버튼
+    const prevBtn = document.createElement('button');
+    prevBtn.innerText = '‹';
+    prevBtn.disabled = !data.previous; 
+    //data.previous는 Django REST Framework(DRF)에서 기본 제공하는 페이지네이션 응답 속성 이름입니다.
+    prevBtn.addEventListener('click', () => loadTodoList(currentPage - 1));
+    wrapper.appendChild(prevBtn);
+
+    // 개별 페이지 버튼들 생성
+    for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement('button');
+        btn.innerText = i;
+        if (i === currentPage) { //엄격한비교
+            btn.disabled = true;
+            btn.classList.add('active');  // CSS로 .active 스타일 지정
+        }
+        btn.addEventListener('click', () => loadTodoList(i)); // ✅오타
+        wrapper.appendChild(btn);
+    }
+
+    // 다음 페이지 버튼
+    const nextBtn = document.createElement('button');
+    nextBtn.innerText = '›';
+    nextBtn.disabled = !data.next;
+    nextBtn.addEventListener('click', () => loadTodoList(currentPage + 1)); // ✅오타
+    wrapper.appendChild(nextBtn);
+}
+</script> 
+
+{% endblock %}

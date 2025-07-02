@@ -8,15 +8,11 @@
     <div class="search-bar" style="margin-bottom:16px;">
       <input type="text" id="searchInput" placeholder="검색어를 입력하세요" style="padding:8px; width:200px;">
       <button id="searchBtn" class="btn">검색</button>
-      
     </div>
     {# ─── 검색바끝 ─── #}
 
     <div class="todocontainer"></div>
     <div class="pagination"></div>
-    <div class="list-btn">
-      <button class="todoCreate" id="createBtn">Todo 등록하기</button>
-    </div>
 
 {% else %}
     <div style="max-width: 600px; margin: 40px auto; text-align: center;">
@@ -129,18 +125,10 @@ function createTodoElement(todo) {
         });
     });
 
-    //✅ 북마크 수정
-    //div.querySelector('.bookmarkBtn').addEventListener('click', function(e) {
-    //    e.stopPropagation();
-    //    toggleBookmark(btn.dataset.id); 
-    //});
-
     //✅ 북마크
-    div.querySelectorAll('.bookmarkBtn').forEach(btn => {
-        btn.addEventListener('click', function (e) {
-            e.stopPropagation();
-            toggleBookmark(btn.dataset.id); // data-id 속성에서 ID 꺼내서 toggleBookmark 호출
-        });
+    div.querySelector('.bookmarkBtn').addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleBookmark(btn.dataset.id); 
     });
 
     // ✅ 댓글 등록 버튼(.commentSubmit)에 클릭 이벤트 연결
@@ -188,10 +176,9 @@ function createTodoElement(todo) {
 
 //✅ Like toggle
 function toggleLike(id) {
-    axiosInstance.post(`/api/interaction/likes/${id}/toggle/`) // 이 요청은 해당 Todo에 대해 "좋아요를 누르거나 취소"하는 기능이다.
-        .then(res => { //서버로부터 받은 응답에서 is_liked와 like_count 값을 추출한다.
-            const { is_liked, like_count } = res.data; //is_liked: 현재 유저가 이 Todo를 좋아요 눌렀는지 여부 (true/false), like_count: 이 Todo를 좋아요 누른 총 사람 수
-
+    axiosInstance.post(`/api/interaction/likes/${id}/toggle/`) 
+        .then(res => { 
+            const { is_liked, like_count } = res.data; 
             const btn = document.querySelector(`.likeBtn[data-id="${id}"]`);
             if (btn) btn.innerHTML = `${is_liked ? '💔' : '❤️'} <span class="count">${like_count}</span>`;
             // 버튼이 실제 존재한다면: 좋아요 상태에 따라 아이콘을 변경 (❤️ → 좋아요 가능, 💔 → 좋아요 취소 가능), 옆에 좋아요 수(like_count)를 함께 출력

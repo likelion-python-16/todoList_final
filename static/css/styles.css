@@ -330,3 +330,29 @@ button:hover {
 .comment-input-area .commentSubmit:hover {
   background-color: #005bb5;
 }
+
+.comment-like-btn {
+  font-size: 14px;
+  padding: 4px 8px;
+  margin-left: 8px;
+  background-color: rgb(10, 132, 255);
+  border: 1px solid #110676;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.comment-like-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.social{  
+  border-radius: 20px;
+  background-color: #45576b;
+  padding: 7px 12px;
+  font-size: 15px;
+}
+
+.social a{
+  color: white;
+  text-decoration: none;
+}

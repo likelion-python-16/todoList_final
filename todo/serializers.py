@@ -11,7 +11,7 @@ class TodoSerializer(ModelSerializer):
 	comment_count = serializers.SerializerMethodField() 
 
 	class Meta:
-		model = Todo
+		model = Todo 
 		fields = [  # ✅ 여기 명시적으로 선언!
 			'id', 'name', 'description', 'complete', 'completed_at',
 			'exp', 'image', 'created_at', 'updated_at',
